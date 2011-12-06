@@ -635,5 +635,18 @@ var WifiManager = (function() {
   manager.disableNetwork = function(netId, callback) {
     disableNetworkCommand(netId, callback);
   }
+  manager.getMacAddress = getMacAddressCommand;
   return manager;
-});
+})();
+
+var WifiService = (function (WifiManager) {
+  WifiManager.onsupplicantconnection = function() {
+    WifiManager.getMacAddress(function (mac) {
+      dump(mac);
+    });
+  }
+
+  WifiManager.setWifiEnabled(function (ok) {
+    dump(ok);
+  });
+})(WifiManager);
