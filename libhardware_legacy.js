@@ -32,12 +32,5 @@ let libhardware_legacy = (function () {
     // Issue a command to the wifi driver. command is the command string, reply will hold the reply, reply_len contains
     // the maximum reply length initially and is updated with the actual length. 0 is returned on success, < 0 on failure.
     command: library.declare("wifi_command", ctypes.default_abi, ctypes.int, ctypes.char.ptr, ctypes.char.ptr, ctypes.size_t.ptr),
-
-    // Issue a DHCP request and returns the acquired information.
-    do_dhcp_request: library.declare("do_dhcp_request", ctypes.default_abi, ctypes.int, ctypes.int.ptr, ctypes.int.ptr,
-                                    ctypes.int.ptr, ctypes.int.ptr, ctypes.int.ptr, ctypes.int.ptr, ctypes.int.ptr),
-
-    // Return the error strings of the last do_dhcp_request.
-    get_dhcp_error_string: library.declare("get_dhcp_error_string", ctypes.default_abi, ctypes.char.ptr)
   };
 };

@@ -80,18 +80,6 @@
     voidControlMessage("close_supplicant_connection");
   }
 
-  function doDhcpRequest(callback) {
-    controlMessage({ cmd: "do_dhcp_request" }, function(data) {
-      callback(data.status ? data : null);
-    });
-  }
-
-  function getDhcpErrorString(callback) {
-    controlMessage({ cmd: "do_dhcp_error_string" }, function(data) {
-      callback(data.error);
-    });
-  }
-
   function doCommand(request, callback) {
     controlMessage({ cmd: "command", request: request }, callback);
   }
@@ -332,15 +320,52 @@
 
   function enableInterface(name, callback) {
     controlMessage({ cmd: "ifc_enable", name: name }, function(data) {
-        callback(data.status);
+      callback(data.status);
     });
   }
 
   function disableInterface(name, callback) {
     controlMessage({ cmd: "ifc_disable", name: name }, function(data) {
-        callback(data.status);
+      callback(data.status);
     });
   }
+
+  function addHostRoute(name, route, callback) {
+    controlMessage({ cmd: "ifc_add_host_route", name: name, route: route }, function(data) {
+      callback(data.status);
+    });
+  }
+
+  function removeHostRoutes(name, callback) {
+    controlMessage({ cmd: "ifc_remove_host_routes", name: name }, function(data) {
+      callback(data.status);
+    });
+  }
+
+  function setDefaultRoute(name, route, callback) {
+    controlMessage({ cmd: "ifc_set_default_route", name: name, route: route }, function(data) {
+      callback(data.status);
+    });
+  }
+
+  function getDefaultRoute(name, callback) {
+    controlMessage({ cmd: "ifc_get_default_route", name: name }, function(data) {
+      callback(data.route);
+    });
+  }
+
+  function removeDefaultRoute(name, callback) {
+    controlMessage({ cmd: "ifc_remove_default_route", name: name }, function(data) {
+      callback(data.status);
+    });
+  }
+
+  function resetConnections(name, callback) {
+    controlMessage({ cmd: "ifc_reset_connections", name: name }, function(data) {
+      callback(data.status);
+    });
+  }
+
 
   var wifi = {};
 

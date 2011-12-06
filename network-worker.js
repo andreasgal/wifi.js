@@ -38,51 +38,53 @@ function onmessage(e) {
     source.postMessage({ id: id, event: event });
     return;
   }
-  if (cmd == "do_dhcp_request") {
-    var ret = libhardware_legacy.do_dhcp_request(ints.addressOfElement(0),
-                                                 ints.addressOfElement(1),
-                                                 ints.addressOfElement(2),
-                                                 ints.addressOfElement(3),
-                                                 ints.addressOfElement(4),
-                                                 ints.addressOfElement(5),
-                                                 ints.addressOfElement(6));
-    source.postMessage({ id: id, status: ret, ipaddr: ints[0], gateway: ints[1], mask: ints[2],
-                         dns1: ints[3], dns2: ints[4], server: ints[5], lease: ints[6]});
-    return;
-  }
-  if (cmd == "get_dhcp_error_string") {
-    var error = libhardware_legacy.get_dhcp_error_string();
-    source.postMessage({ id: id, error: error.readString() });
-    return;
-  }
   if (cmd == "ifc_enable" || cmd == "ifc_disable" || cmd == "ifc_remove_host_routes" ||
-      cmd == "ifc_remove_default_route" || cmd == "ifc_reset_connections") {
-    var ret = libnetutils[cmd](data.name);
+      cmd == "ifc_remove_default_route" || cmd == "ifc_reset_connections" ||
+      cmd == "dhcp_stop" || cmd == "dhcp_release_lease") {
+    var ret = libnetutils[cmd](data.ifname);
     source.postMessage({ id: id, status: ret });
     return;
   }
   if (cmd == "ifc_get_default_route") {
-    var route = libnetutils.ifc_get_default_route(data.name);
+    var route = libnetutils.ifc_get_default_route(data.ifname);
     source.postMessage({ id: id, route: route });
     return;
   }
   if (cmd == "ifc_add_host_route" || cmd == "ifc_set_default_route") {
-    var ret = libnetutils[cmd](data.name, data.route);
+    var ret = libnetutils[cmd](data.ifname, data.route);
     source.postMessage({ id: id, status: ret });
     return;
   }
   if (cmd == "ifc_configure") {
-    var ret = libnetutils.ifc_configure(data.name, data.ipaddr, data.netmask, data.gateway, data.dns1, data,dns2);
+    var ret = libnetutils.ifc_configure(data.ifname, data.ipaddr, data.netmask, data.gateway, data.dns1, data,dns2);
     source.postMessage({ id: id, status: ret });
     return;
   }
+  if (cmd == "dhcp_get_errmsg") {
+    var error = libnetutils.get_dhcp_get_errmsg();
+    source.postMessage({ id: id, error: error.readString() });
+    return;
+  }
+  if (cmd == "dhcp_do_request" || cmd == "dhcp_do_request_renw") {
+    var ret = libnetutils[cmd](data.ifname,
+                               ints.addressOfElement(0),
+                               ints.addressOfElement(1),
+                               ints.addressOfElement(2),
+                               ints.addressOfElement(3),
+                               ints.addressOfElement(4),
+                               ints.addressOfElement(5),
+                               ints.addressOfElement(6));
+    source.postMessage({ id: id, status: ret, ipaddr: ints[0], gateway: ints[1], mask: ints[2],
+                         dns1: ints[3], dns2: ints[4], server: ints[5], lease: ints[6]});
+    return;
+  }
   if (cmd == "property_get") {
-    var ret = libnetutils.property_get(data.key, cbuf, data.defaultValue);
+    var ret = libcutils.property_get(data.key, cbuf, data.defaultValue);
     source.postMessage({ id: id, status: ret, value: cbuf.readString() });
     return;
   }
   if (cmd == "property_set") {
-    var ret = libnetutils.property_set(data.key, data.value);
+    var ret = libctils.property_set(data.key, data.value);
     source.postMessage({ id: id, status: ret });
     return;
   }
