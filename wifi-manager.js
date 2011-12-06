@@ -29,13 +29,6 @@
     }
   };
 
-  // Callbacks to invoke on every event message
-  var eventCallbacks = [];
-
-  function registerEventCallback(callback) {
-    eventCallbacks.push(callback);
-  }
-
   // Polling the status worker
   var recvErrors = 0;
   eventWorker.onmessage = function(e) {
@@ -403,15 +396,6 @@
       callback(data.status ? null : data);
     });
   }
-
-  jobject clazz,
-    jstring ifname,
-    jint ipaddr,
-    jint mask,
-    jint gateway,
-    jint dns1,
-    jint dns2)
-
 
   var wifi = {};
 

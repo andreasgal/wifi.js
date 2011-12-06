@@ -26,4 +26,5 @@ let libhardware_legacy = (function () {
     dhcp_do_request: library.declare("dhcp_do_request_renew", ctypes.default_abi, ctypes.int,
                                      ctypes.char.ptr, ctypes.int.ptr, ctypes.int.ptr, ctypes.int.ptr,
                                      ctypes.int.ptr, ctypes.int.ptr, ctypes.int.ptr, ctypes.int.ptr)
-};
+  };
+});
