@@ -27,4 +27,4 @@ let libhardware_legacy = (function () {
                                      ctypes.char.ptr, ctypes.int.ptr, ctypes.int.ptr, ctypes.int.ptr,
                                      ctypes.int.ptr, ctypes.int.ptr, ctypes.int.ptr, ctypes.int.ptr)
   };
-});
+})();

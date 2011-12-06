@@ -33,4 +33,4 @@ let libhardware_legacy = (function () {
     // the maximum reply length initially and is updated with the actual length. 0 is returned on success, < 0 on failure.
     command: library.declare("wifi_command", ctypes.default_abi, ctypes.int, ctypes.char.ptr, ctypes.char.ptr, ctypes.size_t.ptr),
   };
-  });
+})();
