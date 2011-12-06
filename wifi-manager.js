@@ -417,7 +417,7 @@
       notify("supplicantconnection");
       return;
     }
-    if (++connectTries++ < 3) {
+    if (connectTries++ < 3) {
       // try again in 5 seconds
       setTimeout(function() {
         connectToSupplicant(connectCallback);
