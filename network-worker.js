@@ -4,6 +4,8 @@
 "use strict";
 
 importScript("libhardware_legacy.js");
+importScript("libnetutils.js");
+importScript("libcutils.js");
 
 var cbuf = ctypes.char.array(4096);
 var hwaddr = ctypes.uint8_t.array(6);
@@ -53,30 +55,35 @@ function onmessage(e) {
     source.postMessage({ id: id, error: error.readString() });
     return;
   }
-  if (cmd == "ifc_get_ifindex") {
-    var ret = libnetutils.ifc_get_ifindex(data.name, ints.addressOfElement(0));
-    source.postMessage({ id: id, status: ret, ifindex: ints[0] });
-    return;
-  }
-  if (cmd == "ifc_get_hwaddr") {
-    var ret = libnetutils.ifc_get_hwaddr(data.name, hwaddr);
-    source.postMessage({ id: id, status: ret, [hwaddr[0], hwaddr[1], hwaddr[2],
-                                               hwaddr[3], hwaddr[4], hwaddr[5]] });
-    return;
-  }
-  if (cmd == "ifc_up" || cmd == "ifc_down") {
-    var ret = libnetutils[cmd].call(data.name);
+  if (cmd == "ifc_enable" || cmd == "ifc_disable" || cmd == "ifc_remove_host_routes" ||
+      cmd == "ifc_remove_default_route" || cmd == "ifc_reset_connections") {
+    var ret = libnetutils[cmd](data.name);
     source.postMessage({ id: id, status: ret });
     return;
   }
-  if (cmd == "ifc_set_addr" || cmd == "ifc_set_mask" || cmd == "ifc_set_default_route") {
-    var ret = libnetutils[cmd].call(data.name, data.value);
+  if (cmd == "ifc_get_default_route") {
+    var route = libnetutils.ifc_get_default_route(data.name);
+    source.postMessage({ id: id, route: route });
+    return;
+  }
+  if (cmd == "ifc_add_host_route" || cmd == "ifc_set_default_route") {
+    var ret = libnetutils[cmd](data.name, data.route);
     source.postMessage({ id: id, status: ret });
     return;
   }
-  if (cmd == "ifc_get_info") {
-    var ret = libnetutils.ifc_get_info(data.name, ints.addressOfElement(0), ints.addressOfElement(1), ints.addressOfElement(2));
-    source.postMessage({ id: id, status: ret, addr: ints[0], mask: ints[1], flags: ints[2] });
+  if (cmd == "ifc_configure") {
+    var ret = libnetutils.ifc_configure(data.name, data.ipaddr, data.netmask, data.gateway, data.dns1, data,dns2);
+    source.postMessage({ id: id, status: ret });
+    return;
+  }
+  if (cmd == "property_get") {
+    var ret = libnetutils.property_get(data.key, cbuf, data.defaultValue);
+    source.postMessage({ id: id, status: ret, value: cbuf.readString() });
+    return;
+  }
+  if (cmd == "property_set") {
+    var ret = libnetutils.property_set(data.key, data.value);
+    source.postMessage({ id: id, status: ret });
     return;
   }
   var f = libhardware_legacy[cmd] || libnetutils[cmd];

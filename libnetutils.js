@@ -7,19 +7,15 @@ let libhardware_legacy = (function () {
   let library = ctypes.open("/system/lib/libnetutils.so");
 
   return {
-    ifc_init: library.declare("ifc_init", ctypes.default_abi, ctypes.int),
-
-    ifc_get_ifindex: library.declare("ifc_get_ifindex", ctypes.default_abi, ctypes.int, ctypes.char.ptr, ctypes.int.ptr),
-    ifc_get_hwaddr: library.declare("ifc_get_hwaddr", ctypes.default_abi, ctypes.int, ctypes.char.ptr, ctypes.void.ptr),
-
-    ifc_up: library.declare("ifc_up", ctypes.default_abi, ctypes.int, ctypes.char.ptr),
-    ifc_down: library.declare("ifc_down", ctypes.default_abi, ctypes.int, ctypes.char.ptr),
-
-    ifc_set_addr: library.declare("ifc_set_addr", ctypes.default_abi, ctypes.int, ctypes.char.ptr, ctypes.int),
-    ifc_set_mask: library.declare("ifc_set_mask", ctypes.default_abi, ctypes.int, ctypes.char.ptr, ctypes.int),
-
-    ifc_create_default_route: library.declare("ifc_create_default_route", ctypes.default_abi, ctypes.int, ctypes.char.ptr, ctypes.int),
-
-    ifc_get_info: library.declare("ifc_get_info", ctypes.default_abi, ctypes.int.ptr, ctypes.int.ptr, ctypes.int.ptr)
+    ifc_enable: library.declare("ifc_enable", ctypes.default_abi, ctypes.int, ctypes.char.ptr),
+    ifc_disable: library.declare("ifc_disable", ctypes.default_abi, ctypes.int, ctypes.char.ptr),
+    ifc_add_host_route: library.declare("ifc_add_host_route", ctypes.default_abi, ctypes.int, ctypes.char.ptr, ctypes.int),
+    ifc_remove_host_routes: library.declare("ifc_remove_host_routes", ctypes.default_abi, ctypes.int, ctypes.char.ptr),
+    ifc_set_default_route: library.declare("ifc_set_default_route", ctypes.default_abi, ctypes.int, ctypes.char.ptr, ctypes.int),
+    ifc_get_default_route: library.declare("ifc_get_default_route", ctypes.default_abi, ctypes.int, ctypes.char.ptr),
+    ifc_remove_default_route: library.declare("ifc_remove_default_route", ctypes.default_abi, ctypes.int, ctypes.char.ptr),
+    ifc_reset_connections: library.declare("ifc_reset_connections", ctypes.default_abi, ctypes.int, ctypes.char.ptr),
+    ifc_configure: library.declare("ifc_configure", ctypes.default_abi, ctypes.int, ctypes.char.ptr,
+                                   ctypes.int, ctypes.int, ctypes.int, ctypes.int, ctypes.int)
   };
 };

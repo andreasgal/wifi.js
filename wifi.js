@@ -318,6 +318,30 @@
     doBooleanCommand("DRIVER SETSUSPENDOPT " + (enabled ? 0 : 1), "OK", callback);
   }
 
+  function getProperty(key, defaultValue, callback) {
+    controlMessage({ cmd: "property_get", key: key, defaultValue: defaultValue }, function(data) {
+      callback(data.status ? data.value : null);
+    });
+  }
+
+  function setProperty(key, value, callback) {
+    controlMessage({ cmd: "property_set", key: key, value: value }, function(data) {
+      callback(data.status);
+    });
+  }
+
+  function enableInterface(name, callback) {
+    controlMessage({ cmd: "ifc_enable", name: name }, function(data) {
+        callback(data.status);
+    });
+  }
+
+  function disableInterface(name, callback) {
+    controlMessage({ cmd: "ifc_disable", name: name }, function(data) {
+        callback(data.status);
+    });
+  }
+
   var wifi = {};
 
   function notify(eventName, eventObject) {
@@ -527,6 +551,34 @@
   }
   wifi.updateNetwork(config, callback) {
     wifi.setNetworkConfiguration(config, callback);
+  }
+  wifi.removeNetwork(netId, callback) {
+    removeNetworkCommand(netId, callback);
+  }
+  wifi.enableNetwork(netId, disableOthers, callback) {
+    getProperty("wifi.interface", "tiwlan0", function (ifname) {
+      if (!ifname) {
+        callback(false);
+        return;
+      }
+      enableInterface(name, function (ok) {
+        if (!ok) {
+          callback(false);
+          return;
+        }
+        enableNetworkCommand(netId, disableOthers, function (ok) {
+          if (!ok) {
+            disableInterface(name, function () {
+              callback(false);
+            });
+          }
+          callback(true);
+        });
+      });
+    });
+  }
+  wifi.disableNetwork = function(netId, callback) {
+    disableNetworkCommand(netId, callback);
   }
   return wifi;
 });
