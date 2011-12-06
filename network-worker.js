@@ -6,6 +6,7 @@
 importScript("libhardware_legacy.js");
 
 var cbuf = ctypes.char.array(4096);
+var hwaddr = ctypes.uint8_t.array(6);
 var len = ctypes.size_t();
 var ints = ctypes.int.array(8);
 
@@ -52,6 +53,33 @@ function onmessage(e) {
     source.postMessage({ id: id, error: error.readString() });
     return;
   }
-  var ret = libhardware_legacy[cmd].call(wifi);
-  e.source.postMessage({ id: id, status: ret });
+  if (cmd == "ifc_get_ifindex") {
+    var ret = libnetutils.ifc_get_ifindex(data.name, ints.addressOfElement(0));
+    source.postMessage({ id: id, status: ret, ifindex: ints[0] });
+    return;
+  }
+  if (cmd == "ifc_get_hwaddr") {
+    var ret = libnetutils.ifc_get_hwaddr(data.name, hwaddr);
+    source.postMessage({ id: id, status: ret, [hwaddr[0], hwaddr[1], hwaddr[2],
+                                               hwaddr[3], hwaddr[4], hwaddr[5]] });
+    return;
+  }
+  if (cmd == "ifc_up" || cmd == "ifc_down") {
+    var ret = libnetutils[cmd].call(data.name);
+    source.postMessage({ id: id, status: ret });
+    return;
+  }
+  if (cmd == "ifc_set_addr" || cmd == "ifc_set_mask" || cmd == "ifc_set_default_route") {
+    var ret = libnetutils[cmd].call(data.name, data.value);
+    source.postMessage({ id: id, status: ret });
+    return;
+  }
+  if (cmd == "ifc_get_info") {
+    var ret = libnetutils.ifc_get_info(data.name, ints.addressOfElement(0), ints.addressOfElement(1), ints.addressOfElement(2));
+    source.postMessage({ id: id, status: ret, addr: ints[0], mask: ints[1], flags: ints[2] });
+    return;
+  }
+  var f = libhardware_legacy[cmd] || libnetutils[cmd];
+  var ret = f.call(wifi);
+  source.postMessage({ id: id, status: ret });
 }
