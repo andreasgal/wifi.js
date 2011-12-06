@@ -308,64 +308,87 @@
 
   function getProperty(key, defaultValue, callback) {
     controlMessage({ cmd: "property_get", key: key, defaultValue: defaultValue }, function(data) {
-      callback(data.status ? data.value : null);
+      callback(data.status < 0 ? null : data.value);
     });
   }
 
   function setProperty(key, value, callback) {
     controlMessage({ cmd: "property_set", key: key, value: value }, function(data) {
-      callback(data.status);
+      callback(!data.status);
     });
   }
 
-  function enableInterface(name, callback) {
-    controlMessage({ cmd: "ifc_enable", name: name }, function(data) {
-      callback(data.status);
+  function enableInterface(ifname, callback) {
+    controlMessage({ cmd: "ifc_enable", ifname: ifname }, function(data) {
+      callback(!data.status);
     });
   }
 
-  function disableInterface(name, callback) {
-    controlMessage({ cmd: "ifc_disable", name: name }, function(data) {
-      callback(data.status);
+  function disableInterface(ifname, callback) {
+    controlMessage({ cmd: "ifc_disable", ifname: ifname }, function(data) {
+      callback(!data.status);
     });
   }
 
-  function addHostRoute(name, route, callback) {
-    controlMessage({ cmd: "ifc_add_host_route", name: name, route: route }, function(data) {
-      callback(data.status);
+  function addHostRoute(ifname, route, callback) {
+    controlMessage({ cmd: "ifc_add_host_route", ifname: ifname, route: route }, function(data) {
+      callback(!data.status);
     });
   }
 
-  function removeHostRoutes(name, callback) {
-    controlMessage({ cmd: "ifc_remove_host_routes", name: name }, function(data) {
-      callback(data.status);
+  function removeHostRoutes(ifname, callback) {
+    controlMessage({ cmd: "ifc_remove_host_routes", ifname: ifname }, function(data) {
+      callback(!data.status);
     });
   }
 
-  function setDefaultRoute(name, route, callback) {
-    controlMessage({ cmd: "ifc_set_default_route", name: name, route: route }, function(data) {
-      callback(data.status);
+  function setDefaultRoute(ifname, route, callback) {
+    controlMessage({ cmd: "ifc_set_default_route", ifname: ifname, route: route }, function(data) {
+      callback(!data.status);
     });
   }
 
-  function getDefaultRoute(name, callback) {
-    controlMessage({ cmd: "ifc_get_default_route", name: name }, function(data) {
-      callback(data.route);
+  function getDefaultRoute(ifname, callback) {
+    controlMessage({ cmd: "ifc_get_default_route", ifname: ifname }, function(data) {
+      callback(!data.route);
     });
   }
 
-  function removeDefaultRoute(name, callback) {
-    controlMessage({ cmd: "ifc_remove_default_route", name: name }, function(data) {
-      callback(data.status);
+  function removeDefaultRoute(ifname, callback) {
+    controlMessage({ cmd: "ifc_remove_default_route", ifname: ifname }, function(data) {
+      callback(!data.status);
     });
   }
 
-  function resetConnections(name, callback) {
-    controlMessage({ cmd: "ifc_reset_connections", name: name }, function(data) {
-      callback(data.status);
+  function resetConnections(ifname, callback) {
+    controlMessage({ cmd: "ifc_reset_connections", ifname: ifname }, function(data) {
+      callback(!data.status);
     });
   }
 
+  function runDhcp(ifname, callback) {
+    controlMessage({ cmd: "dhcp_do_request", ifname: ifname }, function(data) {
+      callback(data.status ? null : data);
+    });
+  }
+
+  function stopDhcp(ifname, callback) {
+    controlMessage({ cmd: "dhcp_stop", ifname: ifname }, function(data) {
+      callback(!data.status);
+    });
+  }
+
+  function releaseDhcpLease(ifname, callback) {
+    controlMessage({ cmd: "dhcp_release_lease", ifname: ifname }, function(data) {
+      callback(!data.status);
+    });
+  }
+
+  function getDhcpError(callback) {
+    controlMessage({ cmd: "dhcp_get_errmsg" }, function(data) {
+      callback(data.error);
+    });
+  }
 
   var wifi = {};
 
