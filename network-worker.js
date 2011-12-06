@@ -3,7 +3,7 @@
 
 "use strict";
 
-importScript("wifi-library.js");
+importScript("libhardware_legacy.js");
 
 var cbuf = ctypes.char.array(4096);
 var len = ctypes.size_t();
@@ -17,7 +17,7 @@ function onmessage(e) {
   var source = e.source;
   if (cmd == "command") { // command(cmd)
     len.value = 4096;
-    var ret = wifi.command(data.request, cbuf, len.ptr);
+    var ret = libhardware_legacy.command(data.request, cbuf, len.ptr);
     var reply = "";
     if (!ret) {
       var reply_len = len.value;
@@ -30,28 +30,28 @@ function onmessage(e) {
     return;
   }
   if (cmd == "wait_for_event") { // wait_for_event(buf, len)
-    var ret = wifi.wait_for_event(cbuf, 4096);
+    var ret = libhardware_legacy.wait_for_event(cbuf, 4096);
     var event = cbuf.readString().substr(ret);
     source.postMessage({ id: id, event: event });
     return;
   }
   if (cmd == "do_dhcp_request") {
-    var ret = wifi.do_dhcp_request(ints.addressOfElement(0),
-                                   ints.addressOfElement(1),
-                                   ints.addressOfElement(2),
-                                   ints.addressOfElement(3),
-                                   ints.addressOfElement(4),
-                                   ints.addressOfElement(5),
-                                   ints.addressOfElement(6));
+    var ret = libhardware_legacy.do_dhcp_request(ints.addressOfElement(0),
+                                                 ints.addressOfElement(1),
+                                                 ints.addressOfElement(2),
+                                                 ints.addressOfElement(3),
+                                                 ints.addressOfElement(4),
+                                                 ints.addressOfElement(5),
+                                                 ints.addressOfElement(6));
     source.postMessage({ id: id, status: ret, ipaddr: ints[0], gateway: ints[1], mask: ints[2],
                          dns1: ints[3], dns2: ints[4], server: ints[5], lease: ints[6]});
     return;
   }
   if (cmd == "get_dhcp_error_string") {
-    var error = wifi.get_dhcp_error_string();
+    var error = libhardware_legacy.get_dhcp_error_string();
     source.postMessage({ id: id, error: error.readString() });
     return;
   }
-  var ret = wifi[cmd].call(wifi);
+  var ret = libhardware_legacy[cmd].call(wifi);
   e.source.postMessage({ id: id, status: ret });
 }

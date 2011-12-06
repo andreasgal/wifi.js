@@ -448,18 +448,85 @@
   var networkConfigurationFields = ["ssid", "bssid", "psk", "wep_key0", "wep_key1", "wep_key2", "wep_key3",
                                     "wep_tx_keyidx", "priority", "scan_ssid"];
 
-  wifi.getNetworkConfiguration = function(netId, callback) {
-    var fields = {};
+  wifi.getNetworkConfiguration = function(config, callback) {
+    var netId = config.netId;
     var done = 0;
     for (var n = 0; n < networkConfigurationFields; ++n) {
       var fieldName = networkConfigurationFields[n];
       getNetworkVariableCommand(netId, fieldName, function(value) {
-        fields[fieldName] = value;
+        config[fieldName] = value;
         if (++done == networkConfigurationFields.length)
-          callback(fields);
+          callback(config);
       });
     }
   }
-
+  wifi.setNetworkConfiguration = function(config, callback) {
+    var netId = config.netId;
+    var done = 0;
+    var errors = 0;
+    for (var n = 0; n < networkConfigurationFields; ++n) {
+      var fieldName = networkConfigurationFields[n];
+      if (!(fieldName in config)) {
+        ++done;
+      } else {
+        setNetworkVariableCommand(netId, fieldName, config[fieldName], function(ok) {
+          if (!ok)
+            ++errors;
+          if (++done == networkConfigurationFields.length)
+            callback(errors == 0);
+        });
+      }
+    }
+    // If config didn't contain any of the fields we want, don't lose the error callback
+    if (done == networkConfigurationFields.length)
+      callback(false);
+  }
+  wifi.getConfiguredNetworks = function(callback) {
+    listNetworksCommand(function (reply) {
+      var networks = {};
+      var done = 0;
+      var errors = 0;
+      var lines = reply.split("\n");
+      for (var n = 1; n < lines.length; ++n) {
+        var result = lines[n].split("\t");
+        var netId = result[0];
+        var config = networks[netId] = { netId: netId };
+        switch (result[3]) {
+        case "[CURRENT]":
+          config.status = "CURRENT";
+          break;
+        case "[DISABLED]":
+          config.status = "DISABLED";
+          break;
+        default:
+          config.status = "ENABLED";
+          break;
+        }
+        wifi.getNetworkConfiguration(config, function (ok) {
+            if (!ok)
+              ++errors;
+            if (++done == lines.length - 1) {
+              if (errors) {
+                // If an error occured, delete the new netId
+                removeNetworkCommand(netId, function() {
+                  callback(null);
+                });
+              } else {
+                callback(networks);
+              }
+            }
+        });
+      }
+    });
+  }
+  wifi.addNetwork(config, callback) {
+    addNetworkCommand(function (netId) {
+      config.netId = netId;
+      wifi.setNetworkConfiguration(config, callback);
+    });
+  }
+  wifi.updateNetwork(config, callback) {
+    wifi.setNetworkConfiguration(config, callback);
+  }
   return wifi;
 });
