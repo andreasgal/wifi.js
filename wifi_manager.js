@@ -3,7 +3,7 @@
 
 "use strict";
 
-(function() {
+var WifiManager = (function() {
   var controlWorker;
   var eventWorker;
 
@@ -397,7 +397,7 @@
     });
   }
 
-  var wifi = {};
+  var manager = {};
 
   function notify(eventName, eventObject) {
     var handler = wifi["on" + eventName];
@@ -503,7 +503,7 @@
   var airplaneMode = false;
 
   // Public interface of the wifi service
-  wifi.setWifiEnabled = function(enable, callback) {
+  manager.setWifiEnabled = function(enable, callback) {
     var targetState = enable ? "ENABLED" : "DISABLED";
     if (wifiState == targetState)
       return true;
@@ -520,14 +520,14 @@
     }
   }
 
-  wifi.disconnect = disconnectCommand;
-  wifi.reconnect = reconnectCommand;
-  wifi.reassociate = reassociateCommand;
+  manager.disconnect = disconnectCommand;
+  manager.reconnect = reconnectCommand;
+  manager.reassociate = reassociateCommand;
 
   var networkConfigurationFields = ["ssid", "bssid", "psk", "wep_key0", "wep_key1", "wep_key2", "wep_key3",
                                     "wep_tx_keyidx", "priority", "scan_ssid"];
 
-  wifi.getNetworkConfiguration = function(config, callback) {
+  manager.getNetworkConfiguration = function(config, callback) {
     var netId = config.netId;
     var done = 0;
     for (var n = 0; n < networkConfigurationFields; ++n) {
@@ -539,7 +539,7 @@
       });
     }
   }
-  wifi.setNetworkConfiguration = function(config, callback) {
+  manager.setNetworkConfiguration = function(config, callback) {
     var netId = config.netId;
     var done = 0;
     var errors = 0;
@@ -560,7 +560,7 @@
     if (done == networkConfigurationFields.length)
       callback(false);
   }
-  wifi.getConfiguredNetworks = function(callback) {
+  manager.getConfiguredNetworks = function(callback) {
     listNetworksCommand(function (reply) {
       var networks = {};
       var done = 0;
@@ -581,7 +581,7 @@
           config.status = "ENABLED";
           break;
         }
-        wifi.getNetworkConfiguration(config, function (ok) {
+        manager.getNetworkConfiguration(config, function (ok) {
             if (!ok)
               ++errors;
             if (++done == lines.length - 1) {
@@ -598,20 +598,20 @@
       }
     });
   }
-  wifi.addNetwork(config, callback) {
+  manager.addNetwork(config, callback) {
     addNetworkCommand(function (netId) {
       config.netId = netId;
-      wifi.setNetworkConfiguration(config, callback);
+      manager.setNetworkConfiguration(config, callback);
     });
   }
-  wifi.updateNetwork(config, callback) {
-    wifi.setNetworkConfiguration(config, callback);
+  manager.updateNetwork(config, callback) {
+    manager.setNetworkConfiguration(config, callback);
   }
-  wifi.removeNetwork(netId, callback) {
+  manager.removeNetwork(netId, callback) {
     removeNetworkCommand(netId, callback);
   }
-  wifi.enableNetwork(netId, disableOthers, callback) {
-    getProperty("wifi.interface", "tiwlan0", function (ifname) {
+  manager.enableNetwork(netId, disableOthers, callback) {
+    getProperty("manager.interface", "tiwlan0", function (ifname) {
       if (!ifname) {
         callback(false);
         return;
@@ -632,8 +632,21 @@
       });
     });
   }
-  wifi.disableNetwork = function(netId, callback) {
+  manager.disableNetwork = function(netId, callback) {
     disableNetworkCommand(netId, callback);
   }
-  return wifi;
-});
+  manager.getMacAddress = getMacAddressCommand;
+  return manager;
+})();
+
+var WifiService = (function (WifiManager) {
+  WifiManager.onsupplicantconnection = function() {
+    WifiManager.getMacAddress(function (mac) {
+      dump(mac);
+    });
+  }
+
+  WifiManager.setWifiEnabled(function (ok) {
+    dump(ok);
+  });
+})(WifiManager);
