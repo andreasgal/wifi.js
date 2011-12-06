@@ -390,6 +390,29 @@
     });
   }
 
+  function configureInterface(ifname, ipaddr, mask, gateway, dns1, dns2) {
+    controlMessage({ cmd: "configureInterface", ifname: ifname,
+                     ipaddr: ipaddr, mask: mask, gateway: gateway,
+                     dns1: dns1, dns2: dns2}, function(data) {
+      callback(!data.status);
+    });
+  }
+
+  function runDhcpRenew(ifname, callback) {
+    controlMessage({ cmd: "dhcp_do_request", ifname: ifname }, function(data) {
+      callback(data.status ? null : data);
+    });
+  }
+
+  jobject clazz,
+    jstring ifname,
+    jint ipaddr,
+    jint mask,
+    jint gateway,
+    jint dns1,
+    jint dns2)
+
+
   var wifi = {};
 
   function notify(eventName, eventObject) {
