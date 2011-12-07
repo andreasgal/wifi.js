@@ -23,8 +23,8 @@ let libhardware_legacy = (function () {
     dhcp_stop: library.declare("dhcp_stop", ctypes.default_abi, ctypes.int, ctypes.char.ptr),
     dhcp_release_lease: library.declare("dhcp_release_lease", ctypes.default_abi, ctypes.int, ctypes.char.ptr),
     dhcp_get_errmsg: library.declare("dhcp_get_errmsg", ctypes.default_abi, ctypes.char.ptr),
-    dhcp_do_request: library.declare("dhcp_do_request_renew", ctypes.default_abi, ctypes.int,
-                                     ctypes.char.ptr, ctypes.int.ptr, ctypes.int.ptr, ctypes.int.ptr,
-                                     ctypes.int.ptr, ctypes.int.ptr, ctypes.int.ptr, ctypes.int.ptr)
+    dhcp_do_request_renew: library.declare("dhcp_do_request_renew", ctypes.default_abi, ctypes.int,
+                                           ctypes.char.ptr, ctypes.int.ptr, ctypes.int.ptr, ctypes.int.ptr,
+                                           ctypes.int.ptr, ctypes.int.ptr, ctypes.int.ptr, ctypes.int.ptr)
   };
 })();

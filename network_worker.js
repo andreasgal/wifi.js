@@ -3,9 +3,7 @@
 
 "use strict";
 
-importScript("libhardware_legacy.js");
-importScript("libnetutils.js");
-importScript("libcutils.js");
+importScripts("libhardware_legacy.js", "libnetutils.js", "libcutils.js");
 
 var cbuf = ctypes.char.array(4096);
 var hwaddr = ctypes.uint8_t.array(6);
