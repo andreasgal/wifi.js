@@ -76,16 +76,16 @@ var WifiManager = (function() {
     // for component contexts and can result in crashes. This onerror
     // handler has to make sure that it calls preventDefault on the
     // incoming event.
-    event.preventDefault();
+    e.preventDefault();
 
-    worker = (this === controlWorker) ? "control" : "event";
+    var worker = (this === controlWorker) ? "control" : "event";
 
-    debug("Got an error from the " + worker + " worker: " + event.filename +
-          ":" + event.lineno + ": " + event.message + "\n");
+    debug("Got an error from the " + worker + " worker: " + e.filename +
+          ":" + e.lineno + ": " + e.message + "\n");
   }
 
-  controlWorker.onerror = onerror.bind(controlWorker);
-  eventWorker.onerror = onerror.bind(eventWorker);
+  controlWorker.onerror = onerror;
+  eventWorker.onerror = onerror;
 
   controlWorker.onmessage = function(e) {
     var data = e.data;
@@ -713,6 +713,7 @@ function nsWifiWorker() {
       dump(mac);
     });
   }
+  debug("Wifi starting");
 }
 
 nsWifiWorker.prototype = {
