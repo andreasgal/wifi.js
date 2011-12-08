@@ -583,17 +583,17 @@ var WifiManager = (function() {
   // Public interface of the wifi service
   manager.setWifiEnabled = function(enable, callback) {
     var targetState = enable ? "ENABLED" : "DISABLED";
-    if (wifiState == targetState)
+    if (enable == targetState)
       return true;
     if (enable && airplaneMode)
       return false;
     if (enable) {
-      loadDriver(function (ok) {
-        ok ? startSupplicant(callback) : callback(false);
+      startSupplicant(function (ok) {
+        ok ? loadDriver(callback) : callback(false);
       });
     } else {
-      stopSupplicant(function (ok) {
-        ok ? unloadDriver(callback) : callback(false);
+      unloadDriver(function (ok) {
+        ok ? stopSupplicant(callback) : callback(false);
       });
     }
   }
@@ -727,7 +727,12 @@ function nsWifiWorker() {
   WifiManager.onsupplicantlost = function() {
     debug("Couldn't connect to supplicant");
   }
-  WifiManager.start();
+  WifiManager.setWifiEnabled(true, function (ok) {
+      if (ok)
+        WifiManager.start();
+      else
+        debug("Couldn't start Wifi");
+    });
 
   debug("Wifi starting");
 }
