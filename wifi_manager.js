@@ -478,20 +478,27 @@ var WifiManager = (function() {
 
   // try to connect to the supplicant
   var connectTries = 0;
+  var retryTimer = null;
   function connectCallback(ok) {
     if (ok) {
       // tell the event worker to start waiting for events
+      retryTimer = null;
       waitForEvent();
       notify("supplicantconnection");
       return;
     }
     if (connectTries++ < 3) {
       // try again in 5 seconds
-      setTimeout(function() {
-        connectToSupplicant(connectCallback);
-      }, 5000);
+      if (!retryTimer)
+        retryTimer = Cc["@mozilla.org/timer;1"].createInstance(Ci.nsITimer);
+
+      retryTimer.initWithCallback(function(timer) {
+          connectToSupplicant(connectCallback);
+        }, 5000, Ci.nsITimer.TYPE_ONE_SHOT);
       return;
     }
+
+    retryTimer = null;
     notify("supplicantlost");
   }
 
@@ -712,13 +719,13 @@ var WifiManager = (function() {
 
 function nsWifiWorker() {
   WifiManager.onsupplicantconnection = function() {
-    debug("Connected to suppplicant\n");
+    debug("Connected to supplicant");
     WifiManager.getMacAddress(function (mac) {
       debug("Got mac: " + mac);
     });
   }
   WifiManager.onsupplicantlost = function() {
-    debug("Couldn't connect to supplicant\n");
+    debug("Couldn't connect to supplicant");
   }
   WifiManager.start();
 
