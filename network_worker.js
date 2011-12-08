@@ -5,21 +5,20 @@
 
 importScripts("libhardware_legacy.js", "libnetutils.js", "libcutils.js");
 
-var cbuf = ctypes.char.array(4096);
-var hwaddr = ctypes.uint8_t.array(6);
+var cbuf = ctypes.char.array(4096)();
+var hwaddr = ctypes.uint8_t.array(6)();
 var len = ctypes.size_t();
-var ints = ctypes.int.array(8);
+var ints = ctypes.int.array(8)();
 
-function onmessage(e) {
+self.onmessage = function(e) {
   var data = e.data;
   var id = data.id;
   var cmd = data.cmd;
 
-  var source = e.source;
   switch (cmd) {
   case "command":
     len.value = 4096;
-    var ret = libhardware_legacy.command(data.request, cbuf, len.ptr);
+    var ret = libhardware_legacy.command(data.request, cbuf, len.address());
     var reply = "";
     if (!ret) {
       var reply_len = len.value;
@@ -28,12 +27,12 @@ function onmessage(e) {
         --reply_len;
       reply = str.substr(reply_len);
     }
-    source.postMessage({ id: id, status: ret, reply: reply });
+    postMessage({ id: id, status: ret, reply: reply });
     break;
   case "wait_for_event":
     var ret = libhardware_legacy.wait_for_event(cbuf, 4096);
     var event = cbuf.readString().substr(ret);
-    source.postMessage({ id: id, event: event });
+    postMessage({ id: id, event: event });
     break;
   case "ifc_enable":
   case "ifc_disable":
@@ -43,24 +42,24 @@ function onmessage(e) {
   case "dhcp_stop":
   case "dhcp_release_lease":
     var ret = libnetutils[cmd](data.ifname);
-    source.postMessage({ id: id, status: ret });
+    postMessage({ id: id, status: ret });
     break;
   case "ifc_get_default_route":
     var route = libnetutils.ifc_get_default_route(data.ifname);
-    source.postMessage({ id: id, route: route });
+    postMessage({ id: id, route: route });
     break;
   case "ifc_add_host_route":
   case "ifc_set_default_route":
     var ret = libnetutils[cmd](data.ifname, data.route);
-    source.postMessage({ id: id, status: ret });
+    postMessage({ id: id, status: ret });
     break;
   case "ifc_configure":
     var ret = libnetutils.ifc_configure(data.ifname, data.ipaddr, data.netmask, data.gateway, data.dns1, data,dns2);
-    source.postMessage({ id: id, status: ret });
+    postMessage({ id: id, status: ret });
     break;
   case "dhcp_get_errmsg":
     var error = libnetutils.get_dhcp_get_errmsg();
-    source.postMessage({ id: id, error: error.readString() });
+    postMessage({ id: id, error: error.readString() });
     break;
   case "dhcp_do_request":
   case "dhcp_do_request_renew":
@@ -72,21 +71,21 @@ function onmessage(e) {
                                ints.addressOfElement(4),
                                ints.addressOfElement(5),
                                ints.addressOfElement(6));
-    source.postMessage({ id: id, status: ret, ipaddr: ints[0], gateway: ints[1], mask: ints[2],
-                         dns1: ints[3], dns2: ints[4], server: ints[5], lease: ints[6]});
+    postMessage({ id: id, status: ret, ipaddr: ints[0], gateway: ints[1], mask: ints[2],
+                  dns1: ints[3], dns2: ints[4], server: ints[5], lease: ints[6]});
     break;
   case "property_get":
-    var ret = libcutils.property_get(data.key, cbuf, data.defaultValue);
-    source.postMessage({ id: id, status: ret, value: cbuf.readString() });
+    var ret = libcutils.property_get(data.key, ctypes.cast(cbuf, ctypes.char.ptr), data.defaultValue);
+    postMessage({ id: id, status: ret, value: cbuf.readString() });
     break;
   case "property_set":
     var ret = libctils.property_set(data.key, data.value);
-    source.postMessage({ id: id, status: ret });
+    postMessage({ id: id, status: ret });
     break;
   default:
     var f = libhardware_legacy[cmd] || libnetutils[cmd];
-    var ret = f.call(wifi);
-    source.postMessage({ id: id, status: ret });
+    var ret = f();
+    postMessage({ id: id, status: ret });
     break;
   }
 }

@@ -55,7 +55,7 @@ var WifiManager = (function() {
   var controlWorker = new ChromeWorker(WIFIWORKER_WORKER);
   var eventWorker = new ChromeWorker(WIFIWORKER_WORKER);
 
-  // Callbacks to invoke when a reply arrives from the
+  // Callbacks to invoke when a reply arrives from the controlWorker.
   var controlCallbacks = Object.create(null);
   var idgen = 0;
 
@@ -101,12 +101,12 @@ var WifiManager = (function() {
   var recvErrors = 0;
   eventWorker.onmessage = function(e) {
     // process the event and tell the event worker to listen for more events
-    if (handleEvent(data.event))
+    if (handleEvent(e.data.event))
       waitForEvent();
   };
 
   function waitForEvent() {
-    statusWorker.postMessage({ cmd: "wait_for_event" });
+    eventWorker.postMessage({ cmd: "wait_for_event" });
   }
 
   // Commands to the control worker
@@ -118,27 +118,27 @@ var WifiManager = (function() {
   }
 
   function loadDriver(callback) {
-    voidControlMessage("load_driver");
+    voidControlMessage("load_driver", callback);
   }
 
   function unloadDriver(callback) {
-    voidControlMessage("unload_driver");
+    voidControlMessage("unload_driver", callback);
   }
 
   function startSupplicant(callback) {
-    voidControlMessage("start_supplicant");
+    voidControlMessage("start_supplicant", callback);
   }
 
   function stopSupplicant(callback) {
-    voidControlMessage("stop_supplicant");
+    voidControlMessage("stop_supplicant", callback);
   }
 
   function connectToSupplicant(callback) {
-    voidControlMessage("connect_to_supplicant");
+    voidControlMessage("connect_to_supplicant", callback);
   }
 
   function closeSupplicantConnection(callback) {
-    voidControlMessage("close_supplicant_connection");
+    voidControlMessage("close_supplicant_connection", callback);
   }
 
   function doCommand(request, callback) {
@@ -468,7 +468,7 @@ var WifiManager = (function() {
   var manager = {};
 
   function notify(eventName, eventObject) {
-    var handler = wifi["on" + eventName];
+    var handler = manager["on" + eventName];
     if (handler) {
       if (!eventObject)
         eventObject = ({});
@@ -494,7 +494,10 @@ var WifiManager = (function() {
     }
     notify("supplicantlost");
   }
-  connectToSupplicant(connectCallback);
+
+  manager.start = function() {
+    connectToSupplicant(connectCallback);
+  }
 
   var supplicantStatesMap = ["DISCONNECTED", "INACTIVE", "SCANNING", "ASSOCIATING",
                              "FOUR_WAY_HANDSHAKE", "GROUP_HANDSHAKE", "COMPLETED",
@@ -709,10 +712,16 @@ var WifiManager = (function() {
 
 function nsWifiWorker() {
   WifiManager.onsupplicantconnection = function() {
+    debug("Connected to suppplicant\n");
     WifiManager.getMacAddress(function (mac) {
-      dump(mac);
+      debug("Got mac: " + mac);
     });
   }
+  WifiManager.onsupplicantlost = function() {
+    debug("Couldn't connect to supplicant\n");
+  }
+  WifiManager.start();
+
   debug("Wifi starting");
 }
 
@@ -729,7 +738,7 @@ nsWifiWorker.prototype = {
 
   setWifiEnabled: function(enable) {
     WifiManager.setWifiEnabled(function (ok) {
-      dump(ok);
+      debug(ok);
     });
   },
 

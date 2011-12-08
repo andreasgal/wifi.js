@@ -3,7 +3,7 @@
 
 "use strict";
 
-let libhardware_legacy = (function () {
+let libnetutils = (function () {
   let library = ctypes.open("/system/lib/libnetutils.so");
 
   return {
