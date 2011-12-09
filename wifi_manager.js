@@ -588,12 +588,12 @@ var WifiManager = (function() {
     if (enable && airplaneMode)
       return false;
     if (enable) {
-      startSupplicant(function (ok) {
-        ok ? loadDriver(callback) : callback(false);
+      loadDriver(function (ok) {
+        ok ? startSupplicant(callback) : callback(false);
       });
     } else {
-      unloadDriver(function (ok) {
-        ok ? stopSupplicant(callback) : callback(false);
+      stopSupplicant(function (ok) {
+        ok ? unloadDriver(callback) : callback(false);
       });
     }
   }
