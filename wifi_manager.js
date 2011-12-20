@@ -303,7 +303,7 @@ var WifiManager = (function() {
   function getMacAddressCommand(callback) {
     doStringCommand("DRIVER MACADDR", function(reply) {
       if (reply)
-        reply = reply.split()[2]; // Format: Macaddr = XX.XX.XX.XX.XX.XX
+        reply = reply.split(" ")[2]; // Format: Macaddr = XX.XX.XX.XX.XX.XX
       callback(reply);
     });
   }
@@ -480,7 +480,7 @@ var WifiManager = (function() {
   var connectTries = 0;
   var retryTimer = null;
   function connectCallback(ok) {
-    if (ok) {
+    if (ok === 0) {
       // tell the event worker to start waiting for events
       retryTimer = null;
       waitForEvent();
@@ -513,7 +513,7 @@ var WifiManager = (function() {
 
   // handle events sent to us by the event worker
   function handleEvent(event) {
-    if (event.indexOf("CTRL-EVENT-") != 0) {
+    if (event.indexOf("CTRL-EVENT-") !== 0) {
       if (event.indexOf("WPA:") == 0 &&
           event.indexOf("pre-shared key may be incorrect") != -1) {
         notify("passwordmaybeincorrect");
@@ -521,14 +521,14 @@ var WifiManager = (function() {
       return true;
     }
 
-    var eventData = event.substr(indexOf(" ") + 1);
-    if (event.indexOf("CTRL-EVENT-STATE-CHANGE") == 0) {
+    var eventData = event.substr(event.indexOf(" ") + 1);
+    if (eventData.indexOf("CTRL-EVENT-STATE-CHANGE") === 0) {
       // Parse the event data
       var fields = {};
       var tokens = eventData.split(" ");
       for (var n = 0; n < tokens.length; ++n) {
         var kv = tokens[n].split("=");
-        if (kv.length == 2)
+        if (kv.length === 2)
           fields[kv[0]] = kv[1];
       }
       if (!("state" in fields))
@@ -537,39 +537,39 @@ var WifiManager = (function() {
       notify("statechange", fields);
       return true;
     }
-    if (event.indexOf("CTRL-EVENT-DRIVER-STATE") == 0) {
+    if (eventData.indexOf("CTRL-EVENT-DRIVER-STATE") === 0) {
       var handlerName = driverEventMap[eventData];
       if (handlerName)
         notify(handlerName);
       return true;
     }
-    if (event.indexOf("CTRL-EVENT-TERMINATING") == 0) {
+    if (eventData.indexOf("CTRL-EVENT-TERMINATING") === 0) {
       // If the monitor socket is closed, we have already stopped the
       // supplicant and we can stop waiting for more events and
       // simply exit here (we don't have to notify).
-      if (event.indexOf("connection closed") != -1)
+      if (eventData.indexOf("connection closed") !== -1)
         return false;
 
       // As long we haven't seen too many recv errors yet, we
       // will keep going for a bit longer
-      if (event.indexOf("recv error") != -1 && ++recvErrors < 10)
+      if (eventData.indexOf("recv error") !== -1 && ++recvErrors < 10)
         return true;
 
       notify("supplicantlost");
       return false;
     }
-    if (event.indexOf("CTRL-EVENT-DISCONNECTED") == 0) {
+    if (eventData.indexOf("CTRL-EVENT-DISCONNECTED") === 0) {
       notify("statechange", { state: "DISCONNECTED" });
       return true;
     }
-    if (event.indexOf("CTRL-EVENT-CONNECTED") == 0) {
+    if (eventData.indexOf("CTRL-EVENT-CONNECTED") === 0) {
       // Format: CTRL-EVENT-CONNECTED - Connection to 00:1e:58:ec:d5:6d completed (reauth) [id=1 id_str=]
       var bssid = eventData.split(" ")[4];
       var id = eventData.substr(eventData.indexOf("id=")).split(" ")[0];
       notify("statechange", { state: "CONNECTED", BSSID: bssid, id: id });
       return true;
     }
-    if (event.indexOf("CTRL-EVENT-SCAN-RESULTS") == 0) {
+    if (eventData.indexOf("CTRL-EVENT-SCAN-RESULTS") === 0) {
       notify("scanresultsavailable");
       return true;
     }
@@ -589,11 +589,11 @@ var WifiManager = (function() {
       return false;
     if (enable) {
       loadDriver(function (ok) {
-        ok ? startSupplicant(callback) : callback(false);
+        (ok === 0) ? startSupplicant(callback) : callback(-1);
       });
     } else {
       stopSupplicant(function (ok) {
-        ok ? unloadDriver(callback) : callback(false);
+        (ok === 0) ? unloadDriver(callback) : callback(-1);
       });
     }
   }
@@ -728,7 +728,7 @@ function nsWifiWorker() {
     debug("Couldn't connect to supplicant");
   }
   WifiManager.setWifiEnabled(true, function (ok) {
-      if (ok)
+      if (ok === 0)
         WifiManager.start();
       else
         debug("Couldn't start Wifi");
