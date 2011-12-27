@@ -19,6 +19,7 @@ self.onmessage = function(e) {
   case "command":
     len.value = 4096;
     var ret = libhardware_legacy.command(data.request, cbuf, len.address());
+    dump("For command " + data.request + " ret is " + ret + "\n");
     var reply = "";
     if (!ret) {
       var reply_len = len.value;
@@ -54,7 +55,8 @@ self.onmessage = function(e) {
     postMessage({ id: id, status: ret });
     break;
   case "ifc_configure":
-    var ret = libnetutils.ifc_configure(data.ifname, data.ipaddr, data.netmask, data.gateway, data.dns1, data, dns2);
+    dump("WIFI: data: " + uneval(data) + "\n");
+    var ret = libnetutils.ifc_configure(data.ifname, data.ipaddr, data.mask, data.gateway, data.dns1, data.dns2);
     postMessage({ id: id, status: ret });
     break;
   case "dhcp_get_errmsg":
@@ -79,7 +81,7 @@ self.onmessage = function(e) {
     postMessage({ id: id, status: ret, value: cbuf.readString() });
     break;
   case "property_set":
-    var ret = libctils.property_set(data.key, data.value);
+    var ret = libcutils.property_set(data.key, data.value);
     postMessage({ id: id, status: ret });
     break;
   default:

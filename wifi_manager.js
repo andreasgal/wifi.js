@@ -451,8 +451,8 @@ var WifiManager = (function() {
     });
   }
 
-  function configureInterface(ifname, ipaddr, mask, gateway, dns1, dns2) {
-    controlMessage({ cmd: "configureInterface", ifname: ifname,
+  function configureInterface(ifname, ipaddr, mask, gateway, dns1, dns2, callback) {
+    controlMessage({ cmd: "ifc_configure", ifname: ifname,
                      ipaddr: ipaddr, mask: mask, gateway: gateway,
                      dns1: dns1, dns2: dns2}, function(data) {
       callback(!data.status);
@@ -513,7 +513,9 @@ var WifiManager = (function() {
 
   // handle events sent to us by the event worker
   function handleEvent(event) {
+    debug("Event coming in: " + event);
     if (event.indexOf("CTRL-EVENT-") !== 0) {
+      debug("Got weird event, possibly not doing anything.");
       if (event.indexOf("WPA:") == 0 &&
           event.indexOf("pre-shared key may be incorrect") != -1) {
         notify("passwordmaybeincorrect");
@@ -521,7 +523,7 @@ var WifiManager = (function() {
       return true;
     }
 
-    var eventData = event.substr(event.indexOf(" ") + 1);
+    var eventData = event.substr(0, event.indexOf(" ") + 1);
     if (eventData.indexOf("CTRL-EVENT-STATE-CHANGE") === 0) {
       // Parse the event data
       var fields = {};
@@ -570,6 +572,7 @@ var WifiManager = (function() {
       return true;
     }
     if (eventData.indexOf("CTRL-EVENT-SCAN-RESULTS") === 0) {
+      debug("Notifying of scn results available");
       notify("scanresultsavailable");
       return true;
     }
@@ -603,7 +606,7 @@ var WifiManager = (function() {
   manager.reassociate = reassociateCommand;
 
   var networkConfigurationFields = ["ssid", "bssid", "psk", "wep_key0", "wep_key1", "wep_key2", "wep_key3",
-                                    "wep_tx_keyidx", "priority", "scan_ssid"];
+                                    "wep_tx_keyidx", "priority", "key_mgmt", "scan_ssid"];
 
   manager.getNetworkConfiguration = function(config, callback) {
     var netId = config.netId;
@@ -621,7 +624,7 @@ var WifiManager = (function() {
     var netId = config.netId;
     var done = 0;
     var errors = 0;
-    for (var n = 0; n < networkConfigurationFields; ++n) {
+    for (var n = 0; n < networkConfigurationFields.length; ++n) {
       var fieldName = networkConfigurationFields[n];
       if (!(fieldName in config)) {
         ++done;
@@ -688,24 +691,56 @@ var WifiManager = (function() {
   manager.removeNetwork = function(netId, callback) {
     removeNetworkCommand(netId, callback);
   }
+
+  function ipToString(n) {
+    return String((n & (0xff << 24)) >> 24) + "." +
+                 ((n & (0xff << 16)) >> 16) + "." +
+                 ((n & (0xff <<  8)) >>  8) + "." +
+                 ((n & (0xff <<  0)) >>  0);
+  }
+
   manager.enableNetwork = function(netId, disableOthers, callback) {
-    getProperty("manager.interface", "tiwlan0", function (ifname) {
+    getProperty("wifi.interface", "tiwlan0", function (ifname) {
       if (!ifname) {
         callback(false);
         return;
       }
-      enableInterface(name, function (ok) {
+      enableInterface(ifname, function (ok) {
         if (!ok) {
           callback(false);
           return;
         }
         enableNetworkCommand(netId, disableOthers, function (ok) {
           if (!ok) {
-            disableInterface(name, function () {
+            disableInterface(ifname, function () {
               callback(false);
             });
+            return;
           }
-          callback(true);
+          runDhcp(ifname, function (data) {
+            debug("After running dhcp, got data: " + uneval(data));
+            if (!data) {
+              disableInterface(ifname, function() {
+                callback(false);
+              });
+              return;
+            }
+            setProperty("net.dns1", ipToString(data.dns1), function(ok) {
+              if (!ok) {
+                callback(false);
+                return;
+              }
+              getProperty("net.dnschange", "0", function(value) {
+                if (value === null) {
+                  callback(false);
+                  return;
+                }
+                setProperty("net.dnschange", String(Number(value) + 1), function(ok) {
+                  callback(ok);
+                });
+              });
+            });
+          });
         });
       });
     });
@@ -714,6 +749,7 @@ var WifiManager = (function() {
     disableNetworkCommand(netId, callback);
   }
   manager.getMacAddress = getMacAddressCommand;
+  manager.getScanResults = scanResultsCommand;
   return manager;
 })();
 
@@ -727,6 +763,48 @@ function nsWifiWorker() {
   WifiManager.onsupplicantlost = function() {
     debug("Couldn't connect to supplicant");
   }
+
+  var networks = Object.create(null);
+  WifiManager.onscanresultsavailable = function() {
+    debug("Scan results are available! Asking for them.");
+    if (networks["Mozilla Guest"])
+      return;
+    WifiManager.getScanResults(function(r) {
+      let lines = r.split("\n");
+      // NB: Skip the header line.
+      let added = !("Mozilla Guest" in networks);
+      for (let i = 1; i < lines.length; ++i) {
+        // bssid / frequency / signal level / flags / ssid
+        var match = /([\S]+)\s+([\S]+)\s+([\S]+)\s+(\[[\S]+\])?\s+(.*)/.exec(lines[i])
+        if (match)
+          networks[match[5]] = match[1];
+        else
+          debug("Match didn't find anything for: " + lines[i]);
+      }
+
+      if (("Mozilla Guest" in networks) && added) {
+        debug("Mozilla Guest exists in networks, trying to connect!");
+        var config = Object.create(null);
+        config["ssid"] = '"Mozilla Guest"';
+        //config["bssid"] = '"' + networks["Mozilla Guest"] + '"';
+        config["key_mgmt"] = "NONE";
+        config["scan_ssid"] = 1;
+        WifiManager.addNetwork(config, function (ok) {
+          if (ok) {
+            WifiManager.enableNetwork(config.netId, false, function (ok) {
+              if (ok)
+                debug("Enabled the network!");
+              else
+                debug("Failed to enable the network :(");
+            });
+          } else {
+            debug("Failed to add the network :(");
+          }
+        });
+      }
+    });
+  }
+
   WifiManager.setWifiEnabled(true, function (ok) {
       if (ok === 0)
         WifiManager.start();
@@ -749,14 +827,18 @@ nsWifiWorker.prototype = {
                                          Ci.nsIWifi]),
 
   setWifiEnabled: function(enable) {
-    WifiManager.setWifiEnabled(function (ok) {
+    WifiManager.setWifiEnabled(enable, function (ok) {
       debug(ok);
     });
   },
 
   // This is a bit ugly, but works. In particular, this depends on the fact
   // that RadioManager never actually tries to get the worker from us.
-  get worker() { throw "Not implemented"; }
+  get worker() { throw "Not implemented"; },
+
+  shutdown: function() {
+    this.setWifiEnabled(false);
+  }
 };
 
 const NSGetFactory = XPCOMUtils.generateNSGetFactory([nsWifiWorker]);
